@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hangman Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;background:#87CEEB;display:flex;flex-direction:column;align-items:center;min-height:100vh;overflow-x:hidden;}
+  .container{max-width:900px;width:95%;padding:20px;text-align:center;}
+  .hangman-stage{max-width:500px;width:90%;margin:20px auto;display:block;}
+  .word-display{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin:20px 0;}
+  .word-slot{position:relative;width:50px;height:50px;display:inline-block;margin:0 4px;}
+  .word-slot img.platform{width:100%;height:100%;}
+  .word-slot img.letter{position:absolute;top:0;left:0;width:100%;height:100%;}
+  .alphabet{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:20px;}
+  .alphabet img{width:50px;height:50px;cursor:pointer;transition:transform 0.2s, filter 0.2s;}
+  .alphabet img:hover{transform:scale(1.1);filter:brightness(1.2);}
+  .alphabet img.disabled{opacity:0.4;cursor:not-allowed;}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-size:2rem;gap:20px;z-index:10;display:none;}
+  .overlay button{padding:12px 28px;font-size:1rem;cursor:pointer;border:none;border-radius:8px;background:#ffd166;color:#000;font-weight:700;transition:transform 0.2s;}
+  .overlay button:hover{transform:scale(1.05);}
+  /* Turns indicator */
+  #turnsContainer {
+    position: fixed;
+    top: 200px;
+    right: 5px;
+    z-index: 20;
+    text-align: center;
+  }
+  #turnsContainer img {
+    max-width: 100px;
+    width: 100%;
+    height: auto;
+  }
+</style>
+</head>
+<body>
+
+<!-- Audio -->
+<audio id="hoverSound" src="assets/sounds/hover.mp3"></audio>
+<audio id="clickSound" src="assets/sounds/click.mp3"></audio>
+<audio id="winSound" src="assets/sounds/correct.mp3"></audio>
+<audio id="loseSound" src="assets/sounds/wrong.mp3"></audio>
+
+<!-- Turns left -->
+<div id="turnsContainer">
+  <img src="assets/turns_6.png" alt="Turns Left" id="turnsLeft">
+</div>
+
+<div class="container">
+  <img src="assets/stage01.png" alt="Hangman Stage" class="hangman-stage" id="hangmanStage">
+  <div class="word-display" id="wordDisplay"></div>
+  <div class="alphabet" id="alphabet"></div>
+</div>
+
+<div class="overlay" id="gameOverlay">
+  <div id="overlayMessage"></div>
+  <button id="restartBtn">Play Again</button>
+</div>
+
+<script>
+const words = ["MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY","SUNDAY",
+"JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+const maxMistakes = 6;
+
+let selectedWord = "";
+let guessedLetters = [];
+let mistakes = 0;
+
+const hangmanStage = document.getElementById("hangmanStage");
+const wordDisplay = document.getElementById("wordDisplay");
+const alphabetDiv = document.getElementById("alphabet");
+const overlay = document.getElementById("gameOverlay");
+const overlayMessage = document.getElementById("overlayMessage");
+const restartBtn = document.getElementById("restartBtn");
+const turnsLeftImg = document.getElementById("turnsLeft");
+
+const hoverSound = document.getElementById("hoverSound");
+const clickSound = document.getElementById("clickSound");
+const winSound = document.getElementById("winSound");
+const loseSound = document.getElementById("loseSound");
+
+// Hover sound on letters
+alphabetDiv.addEventListener("mouseover", e => {
+  if(e.target.tagName === "IMG" && !e.target.classList.contains("disabled")){
+    hoverSound.currentTime = 0;
+    hoverSound.play();
+  }
+});
+
+// Init Game
+function initGame(){
+  selectedWord = words[Math.floor(Math.random()*words.length)];
+  guessedLetters = [];
+  mistakes = 0;
+  hangmanStage.src = `assets/stage01.png`;
+  overlay.style.display = "none";
+  updateTurnsLeft();
+  displayWord();
+  createAlphabet();
+}
+
+// Display Word with Platform
+function displayWord(){
+  wordDisplay.innerHTML = "";
+  for(let letter of selectedWord){
+    const slot = document.createElement("div");
+    slot.className = "word-slot";
+
+    // Platform image (always PNG)
+    const platformImg = document.createElement("img");
+    platformImg.src = "assets/platform_blank.png";
+    platformImg.alt = "_";
+    platformImg.className = "platform";
+    slot.appendChild(platformImg);
+
+    // Letter image (JPG) only if guessed
+    if(guessedLetters.includes(letter)){
+      const letterImg = document.createElement("img");
+      letterImg.src = `assets/platform_letter_${letter}.jpg`;
+      letterImg.alt = letter;
+      letterImg.className = "letter";
+      slot.appendChild(letterImg);
+    }
+
+    wordDisplay.appendChild(slot);
+  }
+}
+
+// Create Alphabet
+function createAlphabet(){
+  alphabetDiv.innerHTML = "";
+  for(let i=65;i<=90;i++){
+    const letter = String.fromCharCode(i);
+    const img = document.createElement("img");
+    img.src = `assets/letters/${letter}.jpg`;
+    img.alt = letter;
+
+    img.addEventListener("click", ()=> handleGuess(letter,img));
+    alphabetDiv.appendChild(img);
+  }
+}
+
+// Update Turns Left
+function updateTurnsLeft(){
+  const remainingTurns = Math.max(maxMistakes - mistakes, 0);
+  turnsLeftImg.src = `assets/turns_${remainingTurns}.png`;
+}
+
+// Handle Guess
+function handleGuess(letter,img){
+  if(guessedLetters.includes(letter) || img.classList.contains("disabled")) return;
+  guessedLetters.push(letter);
+  img.classList.add("disabled");
+
+  // Click sound
+  clickSound.currentTime = 0;
+  clickSound.play();
+
+  if(selectedWord.includes(letter)){
+    displayWord();
+    checkWin();
+  } else {
+    mistakes++;
+    hangmanStage.src = `assets/stage0${mistakes+1}.png`;
+    updateTurnsLeft();
+    if(mistakes >= maxMistakes) showOverlay(false);
+  }
+}
+
+// Check Win
+function checkWin(){
+  const wordGuessed = selectedWord.split("").every(l => guessedLetters.includes(l));
+  if(wordGuessed) showOverlay(true);
+}
+
+// Show Overlay & Play Sound
+function showOverlay(win){
+  overlay.style.display = "flex";
+  overlayMessage.textContent = win ? "You Won! 🎉" : `You Lost 😢\nWord: ${selectedWord}`;
+  if(win) winSound.play();
+  else loseSound.play();
+}
+
+restartBtn.addEventListener("click", initGame);
+
+// Start Game
+initGame();
+</script>
+
+</body>
+</html>
