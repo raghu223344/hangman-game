@@ -130,6 +130,9 @@ html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,'Segoe 
 </style>
 </head>
 <body>
+<!-- Audio -->
+<audio id="introSong" src="assets/sounds/introsong.mp3" loop></audio>
+
 <main class="hero" id="hero">
   <div class="clouds"></div>
   <div class="overlay" aria-hidden="true"></div>
@@ -141,6 +144,11 @@ html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,'Segoe 
     <div class="subtext">Click play to start — have fun!</div>
     <div id="offlineNotice" style="display: none; background: rgba(255,255,255,0.9); color: #333; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9em;">
       📱 <strong>Offline Mode:</strong> You're not connected to the internet. The game will work with local features only.
+    </div>
+    <div id="musicControls" style="margin-top: 15px;">
+      <button id="muteBtn" style="background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3); color: white; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 14px; transition: all 0.3s ease;">
+        🔇 Mute Music
+      </button>
     </div>
   </div>
 </main>
@@ -172,6 +180,11 @@ html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,'Segoe 
     </select>
   </label>
   <button id="startGameBtn">Start Game</button>
+  <div id="menuMusicControls" style="margin-top: 15px;">
+    <button id="menuMuteBtn" style="background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3); color: white; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 14px; transition: all 0.3s ease;">
+      🔇 Mute Music
+    </button>
+  </div>
   <div id="offlineOptions" style="display: none; margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;">
     <p style="margin-bottom: 10px;">Since you're offline, you can:</p>
     <button id="offlineGameBtn" style="background: #28a745; margin: 5px;">Play Offline Version</button>
@@ -206,15 +219,90 @@ document.addEventListener('DOMContentLoaded', checkOnlineStatus);
 document.addEventListener('DOMContentLoaded', function() {
   const offlineGameBtn = document.getElementById('offlineGameBtn');
   const tryOnlineBtn = document.getElementById('tryOnlineBtn');
+  const introSong = document.getElementById('introSong');
+  const muteBtn = document.getElementById('muteBtn');
+  
+  // Play intro song when page loads
+  if (introSong) {
+    introSong.volume = 0.3; // Set volume to 30%
+    introSong.play().catch(e => {
+      console.log('Autoplay prevented:', e);
+      // If autoplay is prevented, play on first user interaction
+      document.addEventListener('click', function() {
+        introSong.play();
+      }, { once: true });
+    });
+  }
+  
+  // Mute/Unmute functionality
+  if (muteBtn && introSong) {
+    muteBtn.addEventListener('click', function() {
+      if (introSong.paused) {
+        introSong.play();
+        muteBtn.innerHTML = '🔇 Mute Music';
+        muteBtn.style.background = 'rgba(255,255,255,0.2)';
+        // Update menu button too
+        const menuMuteBtn = document.getElementById('menuMuteBtn');
+        if (menuMuteBtn) {
+          menuMuteBtn.innerHTML = '🔇 Mute Music';
+          menuMuteBtn.style.background = 'rgba(255,255,255,0.2)';
+        }
+      } else {
+        introSong.pause();
+        muteBtn.innerHTML = '🔊 Unmute Music';
+        muteBtn.style.background = 'rgba(255,255,255,0.4)';
+        // Update menu button too
+        const menuMuteBtn = document.getElementById('menuMuteBtn');
+        if (menuMuteBtn) {
+          menuMuteBtn.innerHTML = '🔊 Unmute Music';
+          menuMuteBtn.style.background = 'rgba(255,255,255,0.4)';
+        }
+      }
+    });
+  }
+  
+  // Menu mute button functionality
+  const menuMuteBtn = document.getElementById('menuMuteBtn');
+  if (menuMuteBtn && introSong) {
+    menuMuteBtn.addEventListener('click', function() {
+      if (introSong.paused) {
+        introSong.play();
+        menuMuteBtn.innerHTML = '🔇 Mute Music';
+        menuMuteBtn.style.background = 'rgba(255,255,255,0.2)';
+        // Update main button too
+        if (muteBtn) {
+          muteBtn.innerHTML = '🔇 Mute Music';
+          muteBtn.style.background = 'rgba(255,255,255,0.2)';
+        }
+      } else {
+        introSong.pause();
+        menuMuteBtn.innerHTML = '🔊 Unmute Music';
+        menuMuteBtn.style.background = 'rgba(255,255,255,0.4)';
+        // Update main button too
+        if (muteBtn) {
+          muteBtn.innerHTML = '🔊 Unmute Music';
+          muteBtn.style.background = 'rgba(255,255,255,0.4)';
+        }
+      }
+    });
+  }
   
   if (offlineGameBtn) {
     offlineGameBtn.addEventListener('click', function() {
+      // Stop intro song when starting game
+      if (introSong) {
+        introSong.pause();
+      }
       window.location.href = 'offline-game.html';
     });
   }
   
   if (tryOnlineBtn) {
     tryOnlineBtn.addEventListener('click', function() {
+      // Stop intro song when starting game
+      if (introSong) {
+        introSong.pause();
+      }
       window.location.href = 'game.html';
     });
   }

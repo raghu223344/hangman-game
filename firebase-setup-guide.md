@@ -62,3 +62,5 @@ service cloud.firestore {
 - Verify the score was actually added to Firestore
 - Check if the query is ordering by the correct field
 
+
+

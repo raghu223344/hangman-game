@@ -24,6 +24,7 @@
     }
 
     playBtn.addEventListener('click', () => {
+      // Keep intro song playing through subject selection
       hero.classList.add('fade-out');
       setTimeout(() => {
         menuOverlay.style.display = 'flex';
@@ -53,6 +54,12 @@
     startGameBtn.addEventListener('click', () => {
       const grade = gradeSelect.value;
       const subject = subjectSelect.value;
+      
+      // Stop intro song when starting game
+      const introSong = document.getElementById('introSong');
+      if (introSong) {
+        introSong.pause();
+      }
       
       // Save selections to localStorage to use in game.html
       localStorage.setItem('selectedGrade', grade);
