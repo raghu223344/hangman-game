@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; white-space: pre-wrap; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        button { padding: 10px 20px; margin: 5px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Firebase Debug Tool</h1>
+    <button onclick="runDiagnostics()">Run Full Diagnostics</button>
+    <button onclick="testFirebaseImport()">Test Firebase Import</button>
+    <button onclick="testFirestoreConnection()">Test Firestore Connection</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+    
+    <div id="logs"></div>
+
+    <script type="module">
+        const logs = document.getElementById('logs');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(div);
+            console.log(message);
+        }
+        
+        function clearLogs() {
+            logs.innerHTML = '';
+        }
+        
+        async function testFirebaseImport() {
+            log('Testing Firebase module import...');
+            try {
+                const module = await import('./firebase-leaderboard.js');
+                log('✅ Firebase module imported successfully', 'success');
+                log(`Available functions: ${Object.keys(module).join(', ')}`);
+                return true;
+            } catch (error) {
+                log(`❌ Failed to import Firebase module: ${error.message}`, 'error');
+                log(`Error stack: ${error.stack}`, 'error');
+                return false;
+            }
+        }
+        
+        async function testFirestoreConnection() {
+            log('Testing Firestore connection...');
+            try {
+                const { getTopScores } = await import('./firebase-leaderboard.js');
+                log('Attempting to fetch scores...');
+                const scores = await getTopScores(1);
+                log(`✅ Firestore connection successful! Found ${scores.length} scores`, 'success');
+                if (scores.length > 0) {
+                    log(`Sample score: ${JSON.stringify(scores[0])}`);
+                }
+                return true;
+            } catch (error) {
+                log(`❌ Firestore connection failed: ${error.message}`, 'error');
+                log(`Error code: ${error.code || 'N/A'}`, 'error');
+                log(`Error stack: ${error.stack}`, 'error');
+                
+                // Check for common issues
+                if (error.message.includes('CORS')) {
+                    log('💡 CORS issue detected - try running from a proper web server', 'error');
+                }
+                if (error.message.includes('permission')) {
+                    log('💡 Permission issue - check Firebase security rules', 'error');
+                }
+                if (error.message.includes('network')) {
+                    log('💡 Network issue - check internet connection', 'error');
+                }
+                return false;
+            }
+        }
+        
+        async function runDiagnostics() {
+            log('🔍 Starting Firebase diagnostics...', 'info');
+            clearLogs();
+            
+            // Test 1: Module import
+            const importSuccess = await testFirebaseImport();
+            if (!importSuccess) {
+                log('❌ Diagnostics stopped - module import failed', 'error');
+                return;
+            }
+            
+            // Test 2: Firestore connection
+            const connectionSuccess = await testFirestoreConnection();
+            
+            // Summary
+            if (importSuccess && connectionSuccess) {
+                log('🎉 All tests passed! Firebase should be working correctly.', 'success');
+            } else {
+                log('⚠️ Some tests failed. Check the error messages above.', 'error');
+            }
+        }
+        
+        // Make functions available globally
+        window.runDiagnostics = runDiagnostics;
+        window.testFirebaseImport = testFirebaseImport;
+        window.testFirestoreConnection = testFirestoreConnection;
+        window.clearLogs = clearLogs;
+        
+        // Auto-run diagnostics on page load
+        runDiagnostics();
+    </script>
+</body>
+</html>

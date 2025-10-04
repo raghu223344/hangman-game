@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hangman Game</title>
+<title>Hangman Game - Online Version</title>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-P8271HY3XZ"></script>
 <script>
@@ -32,9 +32,21 @@
   #turnsContainer {position: fixed; top: 200px; right: 5px; z-index: 20; text-align: center;}
   #turnsContainer img {max-width: 100px; width: 100%; height: auto;}
   #hint {margin-top: 10px; font-size: 1.2rem; color: #222; font-weight: 500;}
+  .online-status {position: fixed; top: 10px; right: 10px; padding: 8px 12px; border-radius: 4px; font-size: 0.9em; z-index: 30;}
+  .online {background: #d4edda; color: #155724; border: 1px solid #c3e6cb;}
+  .offline {background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;}
+  .leaderboard {background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 20px 0; max-height: 300px; overflow-y: auto;}
+  .leaderboard h3 {color: #fff; margin-bottom: 10px;}
+  .leaderboard ul {list-style: none; padding: 0;}
+  .leaderboard li {background: rgba(255,255,255,0.1); margin: 5px 0; padding: 8px 12px; border-radius: 4px; color: #fff;}
+  .loading {color: #ffa726; text-align: center; padding: 10px;}
+  .error {color: #ff6b6b; text-align: center; padding: 10px;}
 </style>
 </head>
 <body>
+
+<!-- Online Status Indicator -->
+<div id="onlineStatus" class="online-status online">🌐 Online</div>
 
 <!-- Audio -->
 <audio id="hoverSound" src="assets/sounds/hover.mp3"></audio>
@@ -56,21 +68,26 @@
 
 <div class="overlay" id="gameOverlay">
   <div id="overlayMessage"></div>
-  <div id="leaderboardContainer" style="margin: 20px 0;">
-    <h3 style="color: #fff; margin-bottom: 10px;">🏆 Leaderboard</h3>
-    <ul id="leaderboardList" style="list-style: none; padding: 0; color: #fff;"></ul>
+  <div class="leaderboard">
+    <h3>🏆 Global Leaderboard</h3>
+    <ul id="leaderboardList">
+      <li class="loading">Loading leaderboard...</li>
+    </ul>
   </div>
   <button id="restartBtn">Play Again</button>
 </div>
 
-<script>
+<script type="module">
+// Import Firebase functions
+import { addScore, getTopScores } from './firebase-leaderboard.js';
+
 let selectedWord = "";
 let selectedHint = "";
 let guessedLetters = [];
 let mistakes = 0;
 const maxMistakes = 6;
 
-// Get grade & subject from localStorage
+// Get grade & subject from localStorage or use defaults
 const grade = localStorage.getItem("selectedGrade") || "1";
 const subject = localStorage.getItem("selectedSubject") || "english";
 
@@ -353,11 +370,27 @@ const restartBtn = document.getElementById("restartBtn");
 const turnsLeftImg = document.getElementById("turnsLeft");
 const hintDiv = document.getElementById("hint");
 const leaderboardList = document.getElementById("leaderboardList");
+const onlineStatus = document.getElementById("onlineStatus");
 
 const hoverSound = document.getElementById("hoverSound");
 const clickSound = document.getElementById("clickSound");
 const winSound = document.getElementById("winSound");
 const loseSound = document.getElementById("loseSound");
+
+// Check online status
+function updateOnlineStatus() {
+  if (navigator.onLine) {
+    onlineStatus.textContent = "🌐 Online";
+    onlineStatus.className = "online-status online";
+  } else {
+    onlineStatus.textContent = "📱 Offline";
+    onlineStatus.className = "online-status offline";
+  }
+}
+
+// Listen for online/offline events
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
 
 // Hover sound on letters
 alphabetDiv.addEventListener("mouseover", e => {
@@ -488,119 +521,104 @@ function showOverlay(win){
   loadLeaderboard(); // Refresh leaderboard display
 }
 
-// Add score to leaderboard
+// Add score to Firebase leaderboard
 async function addScoreToLeaderboard(name, score) {
-  // Always save locally as backup
-  saveScoreLocally(name, score);
-  
   try {
-    const { addScore } = await import('./firebase-leaderboard.js');
+    console.log("Adding score to Firebase:", { name, score });
+    
+    // Track game completion in Google Analytics
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'game_completed', {
+        'event_category': 'game',
+        'event_label': 'hangman_win',
+        'value': score
+      });
+    }
+    
     const success = await addScore(name, score);
     if (success) {
-      console.log("Score added to Firebase successfully!");
+      console.log("✅ Score added to Firebase successfully!");
+      
+      // Track score submission in Google Analytics
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'score_submitted', {
+          'event_category': 'leaderboard',
+          'event_label': 'firebase_save',
+          'value': score
+        });
+      }
+      
+      // Show success message briefly
+      const originalText = overlayMessage.textContent;
+      overlayMessage.textContent = "Score saved! 🎉";
+      setTimeout(() => {
+        overlayMessage.textContent = originalText;
+      }, 2000);
     } else {
-      console.error("Failed to add score to Firebase, but saved locally");
+      console.error("❌ Failed to add score to Firebase");
+      overlayMessage.textContent += "\n⚠️ Score not saved (offline)";
     }
   } catch (error) {
     console.error("Error adding score to Firebase:", error);
-    console.log("Score saved locally as backup");
+    overlayMessage.textContent += "\n⚠️ Score not saved (error)";
   }
 }
 
-// Load and display leaderboard
+// Load and display Firebase leaderboard
 async function loadLeaderboard() {
   try {
-    console.log("Loading leaderboard...");
-    const { getTopScores } = await import('./firebase-leaderboard.js');
-    console.log("Firebase module imported successfully");
+    console.log("Loading leaderboard from Firebase...");
+    leaderboardList.innerHTML = "<li class='loading'>Loading leaderboard...</li>";
     
-    const scores = await getTopScores(5);
-    console.log("Scores received:", scores);
+    const scores = await getTopScores(10);
+    console.log("Scores received from Firebase:", scores);
     
     leaderboardList.innerHTML = "";
     
     if (scores.length === 0) {
-      leaderboardList.innerHTML = "<li style='color: #ccc;'>No scores yet - Be the first to play!</li>";
+      leaderboardList.innerHTML = "<li class='loading'>No scores yet - Be the first to play!</li>";
       return;
     }
     
     scores.forEach((score, index) => {
       const li = document.createElement("li");
       li.style.margin = "5px 0";
-      li.style.padding = "5px 10px";
+      li.style.padding = "8px 12px";
       li.style.backgroundColor = "rgba(255,255,255,0.1)";
-      li.style.borderRadius = "5px";
-      li.innerHTML = `<strong>${index + 1}.</strong> ${score.name} - ${score.score} points`;
+      li.style.borderRadius = "4px";
+      
+      // Add ranking emoji
+      let rankEmoji = "🥉";
+      if (index === 0) rankEmoji = "🥇";
+      else if (index === 1) rankEmoji = "🥈";
+      else if (index === 2) rankEmoji = "🥉";
+      
+      li.innerHTML = `
+        <strong>${rankEmoji} ${index + 1}.</strong> ${score.name} - ${score.score} points
+        <small style="color: #ccc; display: block; font-size: 0.8em;">
+          ${new Date(score.timestamp).toLocaleDateString()}
+        </small>
+      `;
       leaderboardList.appendChild(li);
     });
-    console.log("Leaderboard displayed successfully");
-  } catch (error) {
-    console.error("Error loading leaderboard:", error);
-    console.error("Error details:", {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
     
-    // Show a more user-friendly error message
+    console.log("✅ Leaderboard displayed successfully");
+  } catch (error) {
+    console.error("❌ Error loading leaderboard:", error);
     leaderboardList.innerHTML = `
-      <li style='color: #ff6b6b; text-align: center; padding: 10px;'>
-        ⚠️ Leaderboard temporarily unavailable<br>
-        <small style='color: #ccc;'>Check console for details</small>
+      <li class="error">
+        ⚠️ Error loading leaderboard<br>
+        <small>${error.message}</small>
       </li>
     `;
-    
-    // Try to load from localStorage as fallback
-    loadLocalLeaderboard();
-  }
-}
-
-// Fallback: Load leaderboard from localStorage
-function loadLocalLeaderboard() {
-  try {
-    const localScores = JSON.parse(localStorage.getItem('hangman_scores') || '[]');
-    if (localScores.length > 0) {
-      console.log("Loading local leaderboard:", localScores);
-      leaderboardList.innerHTML = "<li style='color: #ffa726; text-align: center; padding: 5px;'>📱 Local Scores:</li>";
-      
-      localScores.slice(0, 5).forEach((score, index) => {
-        const li = document.createElement("li");
-        li.style.margin = "5px 0";
-        li.style.padding = "5px 10px";
-        li.style.backgroundColor = "rgba(255,255,255,0.1)";
-        li.style.borderRadius = "5px";
-        li.innerHTML = `<strong>${index + 1}.</strong> ${score.name} - ${score.score} points`;
-        leaderboardList.appendChild(li);
-      });
-    }
-  } catch (e) {
-    console.error("Error loading local leaderboard:", e);
-  }
-}
-
-// Save score to localStorage as backup
-function saveScoreLocally(name, score) {
-  try {
-    const localScores = JSON.parse(localStorage.getItem('hangman_scores') || '[]');
-    localScores.push({ name, score, timestamp: Date.now() });
-    localScores.sort((a, b) => b.score - a.score); // Sort by score descending
-    localStorage.setItem('hangman_scores', JSON.stringify(localScores.slice(0, 10))); // Keep top 10
-  } catch (e) {
-    console.error("Error saving to localStorage:", e);
   }
 }
 
 restartBtn.addEventListener("click", initGame);
 
-// Start game when page loads
+// Initialize online status and start game
+updateOnlineStatus();
 document.addEventListener('DOMContentLoaded', initGame);
-
-// Also start immediately if DOM is already loaded
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initGame);
-} else {
-  initGame();
-}
 </script>
 </body>
 </html>

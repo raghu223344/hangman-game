@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .leaderboard {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .leaderboard ul {
+            list-style: none;
+            padding: 0;
+        }
+        .leaderboard li {
+            background: white;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 3px solid #007bff;
+        }
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+        .online {
+            background: #d4edda;
+            color: #155724;
+        }
+        .offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="status-indicator" id="statusIndicator">Checking...</div>
+    
+    <div class="container">
+        <h1>🔥 Firebase Connection Test</h1>
+        
+        <div class="test-section">
+            <h3>1. Connection Test</h3>
+            <p>Test if Firebase is properly initialized and accessible.</p>
+            <button onclick="testConnection()">Test Firebase Connection</button>
+            <div id="connectionResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>2. Add Test Score</h3>
+            <p>Add a sample score to the Firebase database.</p>
+            <input type="text" id="playerName" placeholder="Player Name" value="Test Player" style="padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px;">
+            <input type="number" id="testScore" placeholder="Score" value="5" style="padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px;">
+            <button onclick="addTestScore()">Add Test Score</button>
+            <div id="addResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>3. Load Leaderboard</h3>
+            <p>Fetch and display the top scores from Firebase.</p>
+            <button onclick="loadLeaderboard()">Load Top Scores</button>
+            <button onclick="clearLeaderboard()">Clear All Scores</button>
+            <div class="leaderboard">
+                <h4>🏆 Leaderboard</h4>
+                <ul id="leaderboardList">
+                    <li>No scores loaded yet</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>4. Firebase Configuration</h3>
+            <p>Current Firebase project settings:</p>
+            <div class="result info">
+Project ID: hangman-game-15b08
+Collection: hangman_scores
+Security Rules: Allow read/write for all (for testing)
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>5. Troubleshooting</h3>
+            <p>If tests fail, check these common issues:</p>
+            <ul>
+                <li>✅ Internet connection is active</li>
+                <li>✅ Firebase project is not in trial mode</li>
+                <li>✅ Firestore Database is enabled</li>
+                <li>✅ Security rules allow public access</li>
+                <li>✅ Browser allows Firebase connections</li>
+            </ul>
+        </div>
+    </div>
+
+    <script type="module">
+        import { addScore, getTopScores } from './firebase-leaderboard.js';
+        
+        // Update status indicator
+        function updateStatus() {
+            const indicator = document.getElementById('statusIndicator');
+            if (navigator.onLine) {
+                indicator.textContent = '🌐 Online';
+                indicator.className = 'status-indicator online';
+            } else {
+                indicator.textContent = '📱 Offline';
+                indicator.className = 'status-indicator offline';
+            }
+        }
+        
+        // Test Firebase connection
+        window.testConnection = async function() {
+            const resultDiv = document.getElementById('connectionResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Testing Firebase connection...';
+            
+            try {
+                console.log('Testing Firebase connection...');
+                const scores = await getTopScores(1);
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Firebase connection successful!\n\nFound ${scores.length} scores in database.\nConnection established successfully.`;
+                console.log('Connection test successful');
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Firebase connection failed!\n\nError: ${error.message}\nCode: ${error.code || 'Unknown'}\n\nPlease check:\n1. Internet connection\n2. Firebase project status\n3. Security rules\n4. Browser console for details`;
+                console.error('Firebase connection failed:', error);
+            }
+        };
+        
+        // Add test score
+        window.addTestScore = async function() {
+            const resultDiv = document.getElementById('addResult');
+            const playerName = document.getElementById('playerName').value;
+            const score = parseInt(document.getElementById('testScore').value);
+            
+            if (!playerName || isNaN(score)) {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ Please enter valid player name and score';
+                return;
+            }
+            
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = `Adding score: ${playerName} - ${score} points...`;
+            
+            try {
+                console.log('Adding test score:', { playerName, score });
+                const success = await addScore(playerName, score);
+                
+                if (success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Score added successfully!\n\nPlayer: ${playerName}\nScore: ${score} points\nTimestamp: ${new Date().toLocaleString()}`;
+                    console.log('Score added successfully');
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '❌ Failed to add score to database';
+                    console.error('Failed to add score');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error adding score!\n\nError: ${error.message}\nCode: ${error.code || 'Unknown'}\n\nCheck Firebase configuration and security rules.`;
+                console.error('Error adding score:', error);
+            }
+        };
+        
+        // Load leaderboard
+        window.loadLeaderboard = async function() {
+            const leaderboardList = document.getElementById('leaderboardList');
+            
+            try {
+                console.log('Loading leaderboard...');
+                const scores = await getTopScores(10);
+                console.log('Scores received:', scores);
+                
+                leaderboardList.innerHTML = '';
+                
+                if (scores.length === 0) {
+                    leaderboardList.innerHTML = '<li style="color: #666; text-align: center; padding: 20px;">No scores found in database</li>';
+                    return;
+                }
+                
+                scores.forEach((score, index) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <strong>${index + 1}.</strong> ${score.name} - ${score.score} points
+                        <br><small style="color: #666;">${new Date(score.timestamp).toLocaleString()}</small>
+                    `;
+                    leaderboardList.appendChild(li);
+                });
+                
+                console.log('Leaderboard loaded successfully');
+            } catch (error) {
+                leaderboardList.innerHTML = `<li style="color: #dc3545;">Error loading leaderboard: ${error.message}</li>`;
+                console.error('Error loading leaderboard:', error);
+            }
+        };
+        
+        // Clear leaderboard (this would require admin access in production)
+        window.clearLeaderboard = function() {
+            if (confirm('This will clear all scores. Are you sure?')) {
+                alert('To clear all scores, you need to:\n1. Go to Firebase Console\n2. Navigate to Firestore Database\n3. Delete the hangman_scores collection\n\nThis is a safety measure to prevent accidental data loss.');
+            }
+        };
+        
+        // Update status on load and when online/offline
+        updateStatus();
+        window.addEventListener('online', updateStatus);
+        window.addEventListener('offline', updateStatus);
+        
+        // Auto-load leaderboard on page load
+        loadLeaderboard();
+    </script>
+</body>
+</html>
+

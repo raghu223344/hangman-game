@@ -3,15 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hangman Game</title>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-P8271HY3XZ"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-P8271HY3XZ');
-</script>
+<title>Hangman Game - Offline Version</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -32,6 +24,11 @@
   #turnsContainer {position: fixed; top: 200px; right: 5px; z-index: 20; text-align: center;}
   #turnsContainer img {max-width: 100px; width: 100%; height: auto;}
   #hint {margin-top: 10px; font-size: 1.2rem; color: #222; font-weight: 500;}
+  .offline-notice {background: #fff3cd; color: #856404; padding: 10px; border-radius: 4px; margin: 10px 0; border: 1px solid #ffeaa7;}
+  .leaderboard {background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 20px 0; max-height: 300px; overflow-y: auto;}
+  .leaderboard h3 {color: #fff; margin-bottom: 10px;}
+  .leaderboard ul {list-style: none; padding: 0;}
+  .leaderboard li {background: rgba(255,255,255,0.1); margin: 5px 0; padding: 8px 12px; border-radius: 4px; color: #fff;}
 </style>
 </head>
 <body>
@@ -48,6 +45,10 @@
 </div>
 
 <div class="container">
+  <div class="offline-notice">
+    📱 <strong>Offline Mode:</strong> This version works without internet connection. Scores are saved locally.
+  </div>
+  
   <img src="assets/stage01.png" alt="Hangman Stage" class="hangman-stage" id="hangmanStage">
   <div class="word-display" id="wordDisplay"></div>
   <div id="hint"></div>
@@ -56,9 +57,9 @@
 
 <div class="overlay" id="gameOverlay">
   <div id="overlayMessage"></div>
-  <div id="leaderboardContainer" style="margin: 20px 0;">
-    <h3 style="color: #fff; margin-bottom: 10px;">🏆 Leaderboard</h3>
-    <ul id="leaderboardList" style="list-style: none; padding: 0; color: #fff;"></ul>
+  <div class="leaderboard">
+    <h3>🏆 Local Leaderboard</h3>
+    <ul id="leaderboardList"></ul>
   </div>
   <button id="restartBtn">Play Again</button>
 </div>
@@ -70,7 +71,7 @@ let guessedLetters = [];
 let mistakes = 0;
 const maxMistakes = 6;
 
-// Get grade & subject from localStorage
+// Get grade & subject from localStorage or use defaults
 const grade = localStorage.getItem("selectedGrade") || "1";
 const subject = localStorage.getItem("selectedSubject") || "english";
 
@@ -488,119 +489,87 @@ function showOverlay(win){
   loadLeaderboard(); // Refresh leaderboard display
 }
 
-// Add score to leaderboard
-async function addScoreToLeaderboard(name, score) {
-  // Always save locally as backup
-  saveScoreLocally(name, score);
-  
+// Add score to local leaderboard
+function addScoreToLeaderboard(name, score) {
   try {
-    const { addScore } = await import('./firebase-leaderboard.js');
-    const success = await addScore(name, score);
-    if (success) {
-      console.log("Score added to Firebase successfully!");
-    } else {
-      console.error("Failed to add score to Firebase, but saved locally");
-    }
+    const localScores = JSON.parse(localStorage.getItem('hangman_scores') || '[]');
+    localScores.push({ 
+      name: name, 
+      score: score, 
+      timestamp: Date.now(),
+      date: new Date().toLocaleDateString()
+    });
+    
+    // Sort by score (highest first) and keep top 10
+    localScores.sort((a, b) => b.score - a.score);
+    const topScores = localScores.slice(0, 10);
+    
+    localStorage.setItem('hangman_scores', JSON.stringify(topScores));
+    console.log("Score added locally:", { name, score });
   } catch (error) {
-    console.error("Error adding score to Firebase:", error);
-    console.log("Score saved locally as backup");
+    console.error("Error saving score locally:", error);
   }
 }
 
-// Load and display leaderboard
-async function loadLeaderboard() {
+// Load and display local leaderboard
+function loadLeaderboard() {
   try {
-    console.log("Loading leaderboard...");
-    const { getTopScores } = await import('./firebase-leaderboard.js');
-    console.log("Firebase module imported successfully");
-    
-    const scores = await getTopScores(5);
-    console.log("Scores received:", scores);
-    
+    const localScores = JSON.parse(localStorage.getItem('hangman_scores') || '[]');
     leaderboardList.innerHTML = "";
     
-    if (scores.length === 0) {
-      leaderboardList.innerHTML = "<li style='color: #ccc;'>No scores yet - Be the first to play!</li>";
+    if (localScores.length === 0) {
+      leaderboardList.innerHTML = "<li style='color: #ccc; text-align: center; padding: 10px;'>No scores yet - Be the first to play!</li>";
       return;
     }
     
-    scores.forEach((score, index) => {
+    localScores.forEach((score, index) => {
       const li = document.createElement("li");
       li.style.margin = "5px 0";
-      li.style.padding = "5px 10px";
+      li.style.padding = "8px 12px";
       li.style.backgroundColor = "rgba(255,255,255,0.1)";
-      li.style.borderRadius = "5px";
-      li.innerHTML = `<strong>${index + 1}.</strong> ${score.name} - ${score.score} points`;
+      li.style.borderRadius = "4px";
+      li.innerHTML = `
+        <strong>${index + 1}.</strong> ${score.name} - ${score.score} points
+        <small style="color: #ccc; display: block; font-size: 0.8em;">${score.date}</small>
+      `;
       leaderboardList.appendChild(li);
     });
-    console.log("Leaderboard displayed successfully");
+    
+    console.log("Local leaderboard loaded:", localScores.length, "scores");
   } catch (error) {
-    console.error("Error loading leaderboard:", error);
-    console.error("Error details:", {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
-    
-    // Show a more user-friendly error message
-    leaderboardList.innerHTML = `
-      <li style='color: #ff6b6b; text-align: center; padding: 10px;'>
-        ⚠️ Leaderboard temporarily unavailable<br>
-        <small style='color: #ccc;'>Check console for details</small>
-      </li>
-    `;
-    
-    // Try to load from localStorage as fallback
-    loadLocalLeaderboard();
+    console.error("Error loading local leaderboard:", error);
+    leaderboardList.innerHTML = "<li style='color: #ff6b6b;'>Error loading leaderboard</li>";
   }
 }
 
-// Fallback: Load leaderboard from localStorage
-function loadLocalLeaderboard() {
-  try {
-    const localScores = JSON.parse(localStorage.getItem('hangman_scores') || '[]');
-    if (localScores.length > 0) {
-      console.log("Loading local leaderboard:", localScores);
-      leaderboardList.innerHTML = "<li style='color: #ffa726; text-align: center; padding: 5px;'>📱 Local Scores:</li>";
-      
-      localScores.slice(0, 5).forEach((score, index) => {
-        const li = document.createElement("li");
-        li.style.margin = "5px 0";
-        li.style.padding = "5px 10px";
-        li.style.backgroundColor = "rgba(255,255,255,0.1)";
-        li.style.borderRadius = "5px";
-        li.innerHTML = `<strong>${index + 1}.</strong> ${score.name} - ${score.score} points`;
-        leaderboardList.appendChild(li);
-      });
-    }
-  } catch (e) {
-    console.error("Error loading local leaderboard:", e);
+// Clear all local scores
+function clearAllScores() {
+  if (confirm("Are you sure you want to clear all scores?")) {
+    localStorage.removeItem('hangman_scores');
+    loadLeaderboard();
+    console.log("All scores cleared");
   }
 }
 
-// Save score to localStorage as backup
-function saveScoreLocally(name, score) {
-  try {
-    const localScores = JSON.parse(localStorage.getItem('hangman_scores') || '[]');
-    localScores.push({ name, score, timestamp: Date.now() });
-    localScores.sort((a, b) => b.score - a.score); // Sort by score descending
-    localStorage.setItem('hangman_scores', JSON.stringify(localScores.slice(0, 10))); // Keep top 10
-  } catch (e) {
-    console.error("Error saving to localStorage:", e);
-  }
+// Add clear button to leaderboard
+function addClearButton() {
+  const clearBtn = document.createElement("button");
+  clearBtn.textContent = "Clear All Scores";
+  clearBtn.style.background = "#dc3545";
+  clearBtn.style.marginTop = "10px";
+  clearBtn.onclick = clearAllScores;
+  
+  const leaderboard = document.querySelector('.leaderboard');
+  leaderboard.appendChild(clearBtn);
 }
 
 restartBtn.addEventListener("click", initGame);
 
+// Add clear button
+addClearButton();
+
 // Start game when page loads
 document.addEventListener('DOMContentLoaded', initGame);
-
-// Also start immediately if DOM is already loaded
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initGame);
-} else {
-  initGame();
-}
 </script>
 </body>
 </html>

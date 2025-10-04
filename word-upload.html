@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game - Word Upload</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .upload-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        
+        .upload-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .file-upload {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        .file-upload:hover {
+            border-color: #667eea;
+        }
+        
+        .file-upload.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .file-upload input[type="file"] {
+            display: none;
+        }
+        
+        .file-upload-text {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .file-upload-subtext {
+            color: #999;
+            font-size: 0.9em;
+        }
+        
+        .preview {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .preview h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .word-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        
+        .word-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .word-text {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .word-hint {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .word-meta {
+            color: #999;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .instructions {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 15px;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .code-example {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .word-preview {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Word Upload System</h1>
+            <p>Upload words and hints for different grades and subjects</p>
+        </div>
+        
+        <div class="content">
+            <!-- Alert Messages -->
+            <div id="alert" class="alert"></div>
+            
+            <!-- Instructions -->
+            <div class="instructions">
+                <h3>📋 How to Upload Words</h3>
+                <ol>
+                    <li><strong>Choose Upload Method:</strong> Use the form below or upload a JSON file</li>
+                    <li><strong>Select Subject & Grade:</strong> Choose the appropriate subject and grade level</li>
+                    <li><strong>Add Words:</strong> Enter words and their hints</li>
+                    <li><strong>Preview:</strong> Review your words before saving</li>
+                    <li><strong>Save:</strong> Click save to add words to the game</li>
+                </ol>
+                
+                <h4>📄 JSON Format Example:</h4>
+                <div class="code-example">
+[
+  {
+    "word": "COMPUTER",
+    "hint": "Electronic device for work",
+    "subject": "computer",
+    "grade": "1"
+  },
+  {
+    "word": "PROGRAMMING",
+    "hint": "Writing code",
+    "subject": "computer", 
+    "grade": "5"
+  }
+]
+                </div>
+            </div>
+            
+            <!-- File Upload -->
+            <div class="upload-section">
+                <h2>📁 Upload JSON File</h2>
+                <div class="file-upload" id="fileUpload">
+                    <div class="file-upload-text">📤 Click to upload or drag & drop</div>
+                    <div class="file-upload-subtext">JSON file with words and hints</div>
+                    <input type="file" id="fileInput" accept=".json" />
+                </div>
+                <div id="filePreview" class="preview" style="display: none;">
+                    <h3>📋 File Preview</h3>
+                    <div id="previewContent"></div>
+                    <button class="btn btn-success" onclick="processFile()">✅ Process File</button>
+                </div>
+            </div>
+            
+            <!-- Manual Entry -->
+            <div class="upload-section">
+                <h2>✏️ Manual Entry</h2>
+                <form id="manualForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="manualSubject">Subject:</label>
+                            <select id="manualSubject" required>
+                                <option value="">Select Subject</option>
+                                <option value="english">English</option>
+                                <option value="science">Science</option>
+                                <option value="social">Social Studies</option>
+                                <option value="computer">Computer Science</option>
+                                <option value="gk">General Knowledge</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="manualGrade">Grade:</label>
+                            <select id="manualGrade" required>
+                                <option value="">Select Grade</option>
+                                <option value="1">Grade 1</option>
+                                <option value="2">Grade 2</option>
+                                <option value="3">Grade 3</option>
+                                <option value="4">Grade 4</option>
+                                <option value="5">Grade 5</option>
+                                <option value="6">Grade 6</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="manualWords">Words (one per line, format: WORD|HINT):</label>
+                        <textarea id="manualWords" rows="10" placeholder="COMPUTER|Electronic device
+PROGRAMMING|Writing code
+ALGORITHM|Step by step solution"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success">➕ Add Words</button>
+                </form>
+            </div>
+            
+            <!-- Quick Add -->
+            <div class="upload-section">
+                <h2>⚡ Quick Add Single Word</h2>
+                <form id="quickForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="quickWord">Word:</label>
+                            <input type="text" id="quickWord" placeholder="COMPUTER" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="quickHint">Hint:</label>
+                            <input type="text" id="quickHint" placeholder="Electronic device" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="quickSubject">Subject:</label>
+                            <select id="quickSubject" required>
+                                <option value="">Select Subject</option>
+                                <option value="english">English</option>
+                                <option value="science">Science</option>
+                                <option value="social">Social Studies</option>
+                                <option value="computer">Computer Science</option>
+                                <option value="gk">General Knowledge</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="quickGrade">Grade:</label>
+                            <select id="quickGrade" required>
+                                <option value="">Select Grade</option>
+                                <option value="1">Grade 1</option>
+                                <option value="2">Grade 2</option>
+                                <option value="3">Grade 3</option>
+                                <option value="4">Grade 4</option>
+                                <option value="5">Grade 5</option>
+                                <option value="6">Grade 6</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success">➕ Add Word</button>
+                </form>
+            </div>
+            
+            <!-- Actions -->
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn" onclick="window.open('admin.html', '_blank')">🔧 Admin Panel</button>
+                <button class="btn btn-warning" onclick="window.open('index.html', '_blank')">🎮 Back to Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import WordManager from './word-manager.js';
+        
+        let wordManager;
+        let uploadedWords = [];
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            wordManager = new WordManager();
+            await wordManager.loadWords();
+        });
+        
+        // File upload handling
+        const fileUpload = document.getElementById('fileUpload');
+        const fileInput = document.getElementById('fileInput');
+        const filePreview = document.getElementById('filePreview');
+        const previewContent = document.getElementById('previewContent');
+        
+        fileUpload.addEventListener('click', () => fileInput.click());
+        fileUpload.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUpload.classList.add('dragover');
+        });
+        fileUpload.addEventListener('dragleave', () => {
+            fileUpload.classList.remove('dragover');
+        });
+        fileUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUpload.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+        
+        function handleFile(file) {
+            if (file.type !== 'application/json') {
+                showAlert('Please upload a JSON file', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (Array.isArray(data)) {
+                        uploadedWords = data;
+                    } else if (data.words && Array.isArray(data.words)) {
+                        uploadedWords = data.words;
+                    } else {
+                        throw new Error('Invalid JSON format');
+                    }
+                    
+                    displayPreview();
+                    filePreview.style.display = 'block';
+                } catch (error) {
+                    showAlert(`Error parsing JSON: ${error.message}`, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function displayPreview() {
+            previewContent.innerHTML = `
+                <div class="word-preview">
+                    ${uploadedWords.map(word => `
+                        <div class="word-item">
+                            <div class="word-text">${word.word}</div>
+                            <div class="word-hint">${word.hint}</div>
+                            <div class="word-meta">${word.subject} - Grade ${word.grade}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <p><strong>Total words:</strong> ${uploadedWords.length}</p>
+            `;
+        }
+        
+        function processFile() {
+            uploadedWords.forEach(wordData => {
+                if (wordData.word && wordData.hint && wordData.subject && wordData.grade) {
+                    wordManager.addWord(wordData.grade, wordData.subject, wordData.word.toUpperCase(), wordData.hint);
+                }
+            });
+            
+            showAlert(`${uploadedWords.length} words processed successfully!`, 'success');
+            filePreview.style.display = 'none';
+            uploadedWords = [];
+        }
+        
+        // Manual form
+        document.getElementById('manualForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            processManualWords();
+        });
+        
+        function processManualWords() {
+            const subject = document.getElementById('manualSubject').value;
+            const grade = document.getElementById('manualGrade').value;
+            const wordsText = document.getElementById('manualWords').value;
+            
+            if (!subject || !grade || !wordsText) {
+                showAlert('Please fill in all fields', 'error');
+                return;
+            }
+            
+            const lines = wordsText.split('\n').filter(line => line.trim());
+            let addedCount = 0;
+            
+            lines.forEach(line => {
+                const [word, hint] = line.split('|');
+                if (word && hint) {
+                    wordManager.addWord(grade, subject, word.trim().toUpperCase(), hint.trim());
+                    addedCount++;
+                }
+            });
+            
+            showAlert(`${addedCount} words added successfully!`, 'success');
+            document.getElementById('manualForm').reset();
+        }
+        
+        // Quick form
+        document.getElementById('quickForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            addQuickWord();
+        });
+        
+        function addQuickWord() {
+            const word = document.getElementById('quickWord').value.toUpperCase();
+            const hint = document.getElementById('quickHint').value;
+            const subject = document.getElementById('quickSubject').value;
+            const grade = document.getElementById('quickGrade').value;
+            
+            if (!word || !hint || !subject || !grade) {
+                showAlert('Please fill in all fields', 'error');
+                return;
+            }
+            
+            wordManager.addWord(grade, subject, word, hint);
+            showAlert(`Word "${word}" added successfully!`, 'success');
+            document.getElementById('quickForm').reset();
+        }
+        
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert alert-${type}`;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Make functions global
+        window.processFile = processFile;
+    </script>
+</body>
+</html>

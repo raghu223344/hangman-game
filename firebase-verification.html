@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Setup Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .checklist li:before {
+            content: "☐ ";
+            color: #6c757d;
+            font-weight: bold;
+        }
+        .checklist li.checked:before {
+            content: "✅ ";
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Firebase Setup Verification</h1>
+        
+        <div class="step">
+            <h3>1. Firebase Project Configuration</h3>
+            <p>Your Firebase configuration should include the measurementId for Google Analytics:</p>
+            <div class="code-block">
+const firebaseConfig = {
+  apiKey: "AIzaSyAXkVBCk49GRiPsXHaYFGUU50VIog-lzEM",
+  authDomain: "hangman-game-15b08.firebaseapp.com",
+  projectId: "hangman-game-15b08",
+  storageBucket: "hangman-game-15b08.appspot.com",
+  messagingSenderId: "1000706731271",
+  appId: "1:1000706731271:web:e177bc6c0e0d94a50be9a2",
+  measurementId: "G-P8271HY3XZ"  // ← This was missing!
+};
+            </div>
+            <div class="success">✅ Fixed: Added measurementId to Firebase configuration</div>
+        </div>
+
+        <div class="step">
+            <h3>2. Google Analytics Integration</h3>
+            <p>Google Analytics code has been added to all HTML files:</p>
+            <div class="code-block">
+&lt;!-- Google tag (gtag.js) --&gt;
+&lt;script async src="https://www.googletagmanager.com/gtag/js?id=G-P8271HY3XZ"&gt;&lt;/script&gt;
+&lt;script&gt;
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-P8271HY3XZ');
+&lt;/script&gt;
+            </div>
+            <div class="success">✅ Added to: index.html, game.html, online-game.html</div>
+        </div>
+
+        <div class="step">
+            <h3>3. Firebase Security Rules</h3>
+            <p>Update your Firestore security rules in Firebase Console:</p>
+            <div class="code-block">
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /hangman_scores/{document} {
+      allow read, write: if true;
+    }
+  }
+}
+            </div>
+            <div class="warning">⚠️ Go to Firebase Console → Firestore Database → Rules → Replace with above code → Publish</div>
+        </div>
+
+        <div class="step">
+            <h3>4. Test Firebase Connection</h3>
+            <p>Test if Firebase is working correctly:</p>
+            <button class="test-button" onclick="testFirebaseConnection()">Test Firebase Connection</button>
+            <button class="test-button" onclick="testAddScore()">Test Add Score</button>
+            <button class="test-button" onclick="testGetScores()">Test Get Scores</button>
+            <div id="testResults" class="test-results" style="display: none;"></div>
+        </div>
+
+        <div class="step">
+            <h3>5. Firebase Console Checklist</h3>
+            <p>Verify these settings in your Firebase Console:</p>
+            <ul class="checklist">
+                <li>Project is Active (not in trial mode)</li>
+                <li>Firestore Database is enabled</li>
+                <li>Security rules allow public read/write</li>
+                <li>Google Analytics is enabled</li>
+                <li>Web app is registered with correct domain</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>6. Expected Data in Firebase</h3>
+            <p>After testing, you should see:</p>
+            <ul>
+                <li><strong>Firestore Database:</strong> Collection "hangman_scores" with player scores</li>
+                <li><strong>Google Analytics:</strong> Page views and user interactions</li>
+                <li><strong>Real-time updates:</strong> New scores appear immediately</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>7. Troubleshooting</h3>
+            <p>If you don't see data in Firebase:</p>
+            <ul>
+                <li>Check browser console for errors (F12)</li>
+                <li>Verify internet connection</li>
+                <li>Ensure Firebase project is not in trial mode</li>
+                <li>Check if security rules are published</li>
+                <li>Wait 5-10 minutes for Google Analytics data to appear</li>
+            </ul>
+        </div>
+    </div>
+
+    <script type="module">
+        import { addScore, getTopScores } from './firebase-leaderboard.js';
+        
+        const testResults = document.getElementById('testResults');
+        
+        function showResult(message, type = 'info') {
+            testResults.style.display = 'block';
+            testResults.className = `test-results ${type}`;
+            testResults.textContent = message;
+        }
+        
+        window.testFirebaseConnection = async function() {
+            showResult('Testing Firebase connection...', 'info');
+            try {
+                const scores = await getTopScores(1);
+                showResult(`✅ Firebase connection successful!\nFound ${scores.length} scores in database.\nConnection established successfully.`, 'success');
+            } catch (error) {
+                showResult(`❌ Firebase connection failed!\n\nError: ${error.message}\nCode: ${error.code || 'Unknown'}\n\nPlease check:\n1. Internet connection\n2. Firebase project status\n3. Security rules\n4. Browser console for details`, 'error');
+            }
+        };
+        
+        window.testAddScore = async function() {
+            showResult('Testing score addition...', 'info');
+            try {
+                const success = await addScore('Test Player', 5);
+                if (success) {
+                    showResult('✅ Score added successfully!\nPlayer: Test Player\nScore: 5 points\nTimestamp: ' + new Date().toLocaleString(), 'success');
+                } else {
+                    showResult('❌ Failed to add score to database', 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Error adding score!\n\nError: ${error.message}\nCode: ${error.code || 'Unknown'}\n\nCheck Firebase configuration and security rules.`, 'error');
+            }
+        };
+        
+        window.testGetScores = async function() {
+            showResult('Testing score retrieval...', 'info');
+            try {
+                const scores = await getTopScores(5);
+                if (scores.length === 0) {
+                    showResult('ℹ️ No scores found in database\nThis is normal if no scores have been added yet.', 'info');
+                } else {
+                    let result = `✅ Successfully retrieved ${scores.length} scores:\n\n`;
+                    scores.forEach((score, index) => {
+                        result += `${index + 1}. ${score.name} - ${score.score} points\n`;
+                    });
+                    showResult(result, 'success');
+                }
+            } catch (error) {
+                showResult(`❌ Error retrieving scores!\n\nError: ${error.message}\nCode: ${error.code || 'Unknown'}`, 'error');
+            }
+        };
+    </script>
+</body>
+</html>
+

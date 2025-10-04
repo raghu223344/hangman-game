@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game - Offline Launcher</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+        .game-mode {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .game-mode:hover {
+            border-color: #007bff;
+            background: #e3f2fd;
+            transform: translateY(-2px);
+        }
+        .game-mode h3 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .game-mode p {
+            color: #666;
+            margin: 0;
+        }
+        .offline-notice {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #ffeaa7;
+        }
+        .instructions {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .instructions h4 {
+            margin-top: 0;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Hangman Game</h1>
+        <p class="subtitle">Choose your game mode</p>
+        
+        <div class="offline-notice">
+            <strong>📱 Offline Mode:</strong> This version works completely offline without internet connection!
+        </div>
+        
+        <div class="game-mode" onclick="openOfflineGame()">
+            <h3>🚀 Play Offline Game</h3>
+            <p>Fully functional hangman game with local leaderboard. No internet required!</p>
+        </div>
+        
+        <div class="game-mode" onclick="openOriginalGame()">
+            <h3>🌐 Play Online Game</h3>
+            <p>Original game with Firebase leaderboard (requires internet connection)</p>
+        </div>
+        
+        <div class="instructions">
+            <h4>📋 How to Play:</h4>
+            <ol>
+                <li>Click on letters to guess the word</li>
+                <li>Use the hint to help you</li>
+                <li>You have 6 wrong guesses before losing</li>
+                <li>Win to add your score to the leaderboard!</li>
+            </ol>
+        </div>
+        
+        <div class="offline-notice">
+            <strong>💡 Tip:</strong> If you're not connected to the internet, use the "Play Offline Game" option above.
+        </div>
+    </div>
+
+    <script>
+        function openOfflineGame() {
+            window.open('offline-game.html', '_blank');
+        }
+        
+        function openOriginalGame() {
+            window.open('game.html', '_blank');
+        }
+        
+        // Check if online
+        function checkOnlineStatus() {
+            if (!navigator.onLine) {
+                document.querySelector('.offline-notice').innerHTML = 
+                    '<strong>📱 You are offline:</strong> Use the "Play Offline Game" option below for the best experience!';
+                document.querySelector('.offline-notice').style.background = '#f8d7da';
+                document.querySelector('.offline-notice').style.color = '#721c24';
+                document.querySelector('.offline-notice').style.borderColor = '#f5c6cb';
+            }
+        }
+        
+        // Check online status on load
+        checkOnlineStatus();
+        
+        // Listen for online/offline events
+        window.addEventListener('online', checkOnlineStatus);
+        window.addEventListener('offline', checkOnlineStatus);
+    </script>
+</body>
+</html>
+
